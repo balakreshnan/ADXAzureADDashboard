@@ -120,3 +120,20 @@ logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operati
 //| where logintime  between (_startTime.._endTime)
 //| summarize location=max(OfficeProvider), peoplecount = count() by bin(logintime, 1d)
 | evaluate autocluster()
+
+
+iamlogssignin
+| mv-expand  r = data.records
+| project callerIpAddress = tostring(r.callerIpAddress), identity = tostring(r.identity), 
+rlocal = tostring(r.location), loc1city = tostring(r.properties.location.city), loc1state = tostring(r.properties.location.state),
+geocolatitude = tostring(r.properties.location.geoCoordinates.latitude),
+geocolongitude = tostring(r.properties.location.geoCoordinates.longitude),
+logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operationName)
+//| distinct callerIpAddress, identity
+| join kind=inner Officelocations on $left.callerIpAddress == $right.callerIpAddress
+| where logintime  between (_startTime.._endTime)
+| where OfficeProvider has_any (_OfficeProvider)
+| project geocolatitude, geocolongitude, operationName, OfficeProvider, identity, callerIpAddress
+| summarize peoplecount = dcount(callerIpAddress), identitycount=dcount(identity) by OfficeProvider, geocolongitude = tostring(geocolongitude), geocolatitude = tostring(geocolatitude)
+//| render scatterchart with (kind = map)
+//| render scatterchart with (kind = map, xcolumn = geocolongitude, ycolumns = geocolatitude, series = OfficeProvider)
