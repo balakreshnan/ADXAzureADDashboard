@@ -210,3 +210,45 @@ logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operati
 | make-series y=max(peoplecount) on logintime from ago(7d) to datetime(now)+24*7*5h step 1d // create a time series of 5 weeks (last week is empty)
 | extend y_forcasted = series_decompose_forecast(todynamic(tostring(y)), 1*7, 168, 'linefit', 0.4)  // forecast a week forward
 | render timechart 
+
+Officelocations
+| limit 100 
+
+.create table Meetings ( OfficeProvider:string, Name:string , id:string, meetingroom:string, meetingtime:datetime, duration:long  )
+
+print(new_guid())
+
+.ingest inline into table Meetings <|
+"MSFT Eden Prairie", "Meeting 1","ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7","MPR1", 2022-11-28T14:09:00.0000035Z, 60
+"Xfinity", "Meeting 1","afb77875-245b-4ed5-a15d-08b460bdf72c","MPR1", 2022-11-27T14:09:00.0000035Z, 45
+"Att", "Meeting 10","f0a41dbe-02b3-429c-9506-9f8988a471e5","Meeting 1", 2022-11-25T14:09:00.0000035Z, 60
+"MSFT Des Moines", "Meeting 4","9e957909-8551-4e38-b27a-372ed45cd4a1","MPR1", 2022-11-22T14:09:00.0000035Z, 60
+
+.drop table Meetings
+
+Meetings
+| limit 10
+
+.create table MeetingInvitees(Name:string, id:string, email:string, fullname:string, accepted:string, hybrid:string)
+
+.drop table MeetingInvitees
+
+.ingest inline into table MeetingInvitees <|
+"Meeting 4", 9e957909-8551-4e38-b27a-372ed45cd4a1,"babal@microsoft.com","Bala", yes, remote
+"Meeting 4", 9e957909-8551-4e38-b27a-372ed45cd4a1,"robnotto@microsoft.com","Rob N", yes, onpremise
+"Meeting 4", 9e957909-8551-4e38-b27a-372ed45cd4a1,"markhoiland@microsoft.com","Mark H", yes, remote
+"Meeting 10", f0a41dbe-02b3-429c-9506-9f8988a471e5,"robnotto@microsoft.com","Ron Notto", yes, onpremise
+"Meeting 10", f0a41dbe-02b3-429c-9506-9f8988a471e5,"babal@microsoft.com","Bala B", yes, onpremise
+"Meeting 1", afb77875-245b-4ed5-a15d-08b460bdf72c,"markhoiland@microsoft.com","Mark H", yes, onpremise
+"Meeting 1", afb77875-245b-4ed5-a15d-08b460bdf72c,"robnotto@microsoft.com","Rob N", yes, onpremise
+"Meeting 1", afb77875-245b-4ed5-a15d-08b460bdf72c,"babal@microsoft.com","Bala B", yes, remote
+"Meeting 1", ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7,"robnotto@microsoft.com","Rob Notto", yes, remote
+"Meeting 1", ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7,"babal@microsoft.com","Bala B", yes, onpremise
+"Meeting 1", ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7,"markhoiland@microsoft.com","Mark H", yes, onpremise
+
+MeetingInvitees
+| limit 100 
+
+Meetings
+| join kind=inner  MeetingInvitees on id
+| project OfficeProvider
