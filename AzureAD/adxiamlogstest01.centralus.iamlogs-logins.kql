@@ -273,3 +273,23 @@ email = tostring(r.properties.userPrincipalName)
 | summarize meetincount = dcount(Name), peoplecount = dcount(callerIpAddress), identitycount=dcount(identity) by OfficeProvider, 
 geocolongitude = tostring(geocolongitude), geocolatitude = tostring(geocolatitude)
 //| render scatterchart with (kind = map)
+
+
+iamlogssignin
+| mv-expand  r = data.records
+| project callerIpAddress = tostring(r.callerIpAddress), identity = tostring(r.identity), 
+rlocal = tostring(r.location), loc1city = tostring(r.properties.location.city), loc1state = tostring(r.properties.location.state),
+geocolatitude = tostring(r.properties.location.geoCoordinates.latitude),
+geocolongitude = tostring(r.properties.location.geoCoordinates.longitude),
+logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operationName),
+email = tostring(r.properties.userPrincipalName)
+| join kind=inner Officelocations on $left.callerIpAddress == $right.callerIpAddress
+//| where logintime  between (_startTime.._endTime)
+//| where OfficeProvider has_any (_OfficeProvider)
+| join kind=inner MeetingInvitees on $left.email == $right.email
+| project geocolatitude, geocolongitude, operationName, OfficeProvider, identity, callerIpAddress, Name, id, logintime
+| summarize meetincount = dcount(Name), peoplecount = dcount(callerIpAddress), identitycount=dcount(identity) by bin(logintime,1d)
+| project meetincount, peoplecount, logintime
+| make-series y=max(peoplecount) on logintime from ago(7d) to datetime(now)+1*7*1d step 1d // create a time series of 5 weeks (last week is empty)
+| extend y_forcasted = series_decompose_forecast(todynamic(tostring(y)), 1*7, 168, 'linefit', 0.4)  // forecast a week forward
+| render timechart 
