@@ -137,3 +137,42 @@ logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operati
 | summarize peoplecount = dcount(callerIpAddress), identitycount=dcount(identity) by OfficeProvider, geocolongitude = tostring(geocolongitude), geocolatitude = tostring(geocolatitude)
 //| render scatterchart with (kind = map)
 //| render scatterchart with (kind = map, xcolumn = geocolongitude, ycolumns = geocolatitude, series = OfficeProvider)
+
+iamlogssignin
+| mv-expand  r = data.records
+| project callerIpAddress = tostring(r.callerIpAddress), identity = tostring(r.identity), 
+rlocal = tostring(r.location), loc1city = tostring(r.properties.location.city), loc1state = tostring(r.properties.location.state),
+geocolatitude = tostring(r.properties.location.geoCoordinates.latitude),
+geocolongitude = tostring(r.properties.location.geoCoordinates.longitude),
+logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operationName)
+| join kind=inner Officelocations on $left.callerIpAddress == $right.callerIpAddress
+| where isempty(loc1state)
+//| project geocolatitude, geocolongitude, loc1city, loc1state, callerIpAddress, identity
+| distinct identity
+
+iamlogssignin
+| mv-expand  r = data.records
+| project callerIpAddress = tostring(r.callerIpAddress), identity = tostring(r.identity), 
+rlocal = tostring(r.location), loc1city = tostring(r.properties.location.city), loc1state = tostring(r.properties.location.state),
+geocolatitude = tostring(r.properties.location.geoCoordinates.latitude),
+geocolongitude = tostring(r.properties.location.geoCoordinates.longitude),
+logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operationName)
+| join kind=inner Officelocations on $left.callerIpAddress == $right.callerIpAddress
+| where isnotempty(loc1state)
+//| project geocolatitude, geocolongitude, loc1city, loc1state, callerIpAddress, identity
+| distinct identity
+
+.create table employees ( EmployeeName:string, ID:string , city:string, state:string, latitude:string, longitude:string )
+
+.set-or-append employees <| (iamlogssignin
+    | mv-expand  r = data.records
+    | project callerIpAddress = tostring(r.callerIpAddress), identity = tostring(r.identity), 
+    rlocal = tostring(r.location), city = tostring(r.properties.location.city), state = tostring(r.properties.location.state),
+    latitude = tostring(r.properties.location.geoCoordinates.latitude),
+    longitude = tostring(r.properties.location.geoCoordinates.longitude),
+    logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operationName),
+    userid = tostring(r.properties.userid)
+    | distinct identity, userid, city, state, latitude, longitude)
+
+employees
+| limit 1000 
