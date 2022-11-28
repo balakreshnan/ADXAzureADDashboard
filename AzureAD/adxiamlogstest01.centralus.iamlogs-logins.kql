@@ -256,3 +256,20 @@ MeetingInvitees
 Meetings
 | join kind=innerunique  MeetingInvitees on $left.id == $right.id
 //| project OfficeProvider
+
+iamlogssignin
+| mv-expand  r = data.records
+| project callerIpAddress = tostring(r.callerIpAddress), identity = tostring(r.identity), 
+rlocal = tostring(r.location), loc1city = tostring(r.properties.location.city), loc1state = tostring(r.properties.location.state),
+geocolatitude = tostring(r.properties.location.geoCoordinates.latitude),
+geocolongitude = tostring(r.properties.location.geoCoordinates.longitude),
+logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operationName),
+email = tostring(r.properties.userPrincipalName)
+| join kind=inner Officelocations on $left.callerIpAddress == $right.callerIpAddress
+//| where logintime  between (_startTime.._endTime)
+//| where OfficeProvider has_any (_OfficeProvider)
+| join kind=inner MeetingInvitees on $left.email == $right.email
+| project geocolatitude, geocolongitude, operationName, OfficeProvider, identity, callerIpAddress, Name, id
+| summarize meetincount = dcount(Name), peoplecount = dcount(callerIpAddress), identitycount=dcount(identity) by OfficeProvider, 
+geocolongitude = tostring(geocolongitude), geocolatitude = tostring(geocolatitude)
+//| render scatterchart with (kind = map)
