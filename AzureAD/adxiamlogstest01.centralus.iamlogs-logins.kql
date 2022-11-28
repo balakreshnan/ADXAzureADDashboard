@@ -176,3 +176,37 @@ logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operati
 
 employees
 | limit 1000 
+
+iamlogssignin
+| mv-expand  r = data.records
+| project callerIpAddress = tostring(r.callerIpAddress), identity = tostring(r.identity), 
+rlocal = tostring(r.location), loc1city = tostring(r.properties.location.city), loc1state = tostring(r.properties.location.state),
+geocolatitude = tostring(r.properties.location.geoCoordinates.latitude),
+geocolongitude = tostring(r.properties.location.geoCoordinates.longitude),
+logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operationName)
+| join kind=inner Officelocations on $left.callerIpAddress == $right.callerIpAddress
+//| where OfficeProvider has_any (_OfficeProvider)
+//| where logintime  between (_startTime.._endTime)
+| summarize location=max(OfficeProvider), peoplecount = count() by bin(logintime, 1d)
+| project location, peoplecount, logintime
+| make-series num=count() default=0 on logintime step 1d by location
+| extend y_forcasted = series_decompose_forecast(todynamic(tostring(num)), 24*7)  // forecast a week forward
+| extend ma_num=series_fir(num, repeat(1, 5), true, true)
+| render timechart 
+
+iamlogssignin
+| mv-expand  r = data.records
+| project callerIpAddress = tostring(r.callerIpAddress), identity = tostring(r.identity), 
+rlocal = tostring(r.location), loc1city = tostring(r.properties.location.city), loc1state = tostring(r.properties.location.state),
+geocolatitude = tostring(r.properties.location.geoCoordinates.latitude),
+geocolongitude = tostring(r.properties.location.geoCoordinates.longitude),
+logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operationName)
+| join kind=inner Officelocations on $left.callerIpAddress == $right.callerIpAddress
+//| where OfficeProvider has_any (_OfficeProvider)
+//| where logintime  between (_startTime.._endTime)
+//| where identity  has_any (_employee)
+| summarize location=max(OfficeProvider), peoplecount = dcount(identity) by bin(logintime, 1d)
+| project location, peoplecount, logintime
+| make-series y=max(peoplecount) on logintime from ago(7d) to datetime(now)+24*7*5h step 1d // create a time series of 5 weeks (last week is empty)
+| extend y_forcasted = series_decompose_forecast(todynamic(tostring(y)), 1*7, 168, 'linefit', 0.4)  // forecast a week forward
+| render timechart 
