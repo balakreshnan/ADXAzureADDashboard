@@ -214,7 +214,7 @@ logintime = todatetime(tostring(r.['time'])), operationName = tostring(r.operati
 Officelocations
 | limit 100 
 
-.create table Meetings ( OfficeProvider:string, Name:string , id:string, meetingroom:string, meetingtime:datetime, duration:long  )
+.create table Meetings ( OfficeProvider:string, Name:string , id:string , meetingroom:string, meetingtime:datetime, duration:long  )
 
 print(new_guid())
 
@@ -226,29 +226,33 @@ print(new_guid())
 
 .drop table Meetings
 
+.clear table Meetings data 
+
 Meetings
 | limit 10
 
-.create table MeetingInvitees(Name:string, id:string, email:string, fullname:string, accepted:string, hybrid:string)
+.create table MeetingInvitees(Name:string, id:string , email:string, fullname:string, accepted:string, hybrid:string)
 
 .drop table MeetingInvitees
 
+.clear table MeetingInvitees data 
+
 .ingest inline into table MeetingInvitees <|
-"Meeting 4", 9e957909-8551-4e38-b27a-372ed45cd4a1,"babal@microsoft.com","Bala", yes, remote
-"Meeting 4", 9e957909-8551-4e38-b27a-372ed45cd4a1,"robnotto@microsoft.com","Rob N", yes, onpremise
-"Meeting 4", 9e957909-8551-4e38-b27a-372ed45cd4a1,"markhoiland@microsoft.com","Mark H", yes, remote
-"Meeting 10", f0a41dbe-02b3-429c-9506-9f8988a471e5,"robnotto@microsoft.com","Ron Notto", yes, onpremise
-"Meeting 10", f0a41dbe-02b3-429c-9506-9f8988a471e5,"babal@microsoft.com","Bala B", yes, onpremise
-"Meeting 1", afb77875-245b-4ed5-a15d-08b460bdf72c,"markhoiland@microsoft.com","Mark H", yes, onpremise
-"Meeting 1", afb77875-245b-4ed5-a15d-08b460bdf72c,"robnotto@microsoft.com","Rob N", yes, onpremise
-"Meeting 1", afb77875-245b-4ed5-a15d-08b460bdf72c,"babal@microsoft.com","Bala B", yes, remote
-"Meeting 1", ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7,"robnotto@microsoft.com","Rob Notto", yes, remote
-"Meeting 1", ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7,"babal@microsoft.com","Bala B", yes, onpremise
-"Meeting 1", ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7,"markhoiland@microsoft.com","Mark H", yes, onpremise
+"Meeting 4",9e957909-8551-4e38-b27a-372ed45cd4a1,"babal@microsoft.com","Bala", yes, remote
+"Meeting 4",9e957909-8551-4e38-b27a-372ed45cd4a1,"robnotto@microsoft.com","Rob N", yes, onpremise
+"Meeting 4",9e957909-8551-4e38-b27a-372ed45cd4a1,"markhoiland@microsoft.com","Mark H", yes, remote
+"Meeting 10",f0a41dbe-02b3-429c-9506-9f8988a471e5,"robnotto@microsoft.com","Ron Notto", yes, onpremise
+"Meeting 10",f0a41dbe-02b3-429c-9506-9f8988a471e5,"babal@microsoft.com","Bala B", yes, onpremise
+"Meeting 1",afb77875-245b-4ed5-a15d-08b460bdf72c,"markhoiland@microsoft.com","Mark H", yes, onpremise
+"Meeting 1",afb77875-245b-4ed5-a15d-08b460bdf72c,"robnotto@microsoft.com","Rob N", yes, onpremise
+"Meeting 1",afb77875-245b-4ed5-a15d-08b460bdf72c,"babal@microsoft.com","Bala B", yes, remote
+"Meeting 1",ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7,"robnotto@microsoft.com","Rob Notto", yes, remote
+"Meeting 1",ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7,"babal@microsoft.com","Bala B", yes, onpremise
+"Meeting 1",ce610494-e2d9-4933-9c4f-1dbd5c6a1ea7,"markhoiland@microsoft.com","Mark H", yes, onpremise
 
 MeetingInvitees
 | limit 100 
 
 Meetings
-| join kind=inner  MeetingInvitees on id
-| project OfficeProvider
+| join kind=innerunique  MeetingInvitees on $left.id == $right.id
+//| project OfficeProvider
